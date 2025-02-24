@@ -1,0 +1,7 @@
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+
+# env files (can opt-in for committing if needed)
+.env*
