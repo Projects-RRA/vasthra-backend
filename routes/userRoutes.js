@@ -48,46 +48,52 @@ router.post("/register", async (req, res) => {
 });
 
 router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
-
-  console.log("Received login request:", req.body);
-
-  try {
-    console.log("Executing query:", "SELECT * FROM users WHERE email = ?");
-    const [users] = await db.execute("SELECT * FROM users WHERE email = ?", [
-      email,
-    ]);
-
-    console.log("User query result:", users);
-
-    if (!Array.isArray(users) || users.length === 0) {
-      console.log("User not found or query returned an unexpected structure");
-      return res.status(401).json({ error: "Invalid email or password" });
+    const { email, password } = req.body;
+  
+    console.log("Received login request:", req.body);
+  
+    try {
+      console.log("Executing query:", "SELECT * FROM users WHERE email = ?");
+      const [users] = await db.execute("SELECT * FROM users WHERE email = ?", [
+        email,
+      ]);
+  
+      console.log("User query result:", users);
+  
+      if (!Array.isArray(users) || users.length === 0) {
+        console.log("User not found or query returned an unexpected structure");
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
+  
+      const user = users[0];
+  
+      const isMatch = await bcrypt.compare(password, user.password_hash);
+      console.log("Password match status:", isMatch);
+  
+      if (!isMatch) {
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
+  
+      const token = jwt.sign(
+        { userId: user.id, role: user.role }, // Include role in JWT
+        process.env.JWT_SECRET,
+        { expiresIn: "1h" }
+      );
+  
+      console.log("Generated token:", token);
+  
+      res.json({ 
+        message: "Login successful", 
+        token,
+        role: user.role, // Return role in response
+        userName: user.name  // Return name in response
+      });
+    } catch (error) {
+      console.error("Database error during login:", error);
+      console.error("Error details:", error); // Log full error object
+      res.status(500).json({ error: "Database error", details: error.message });
     }
-
-    const user = users[0];
-
-    const isMatch = await bcrypt.compare(password, user.password_hash);
-    console.log("Password match status:", isMatch);
-
-    if (!isMatch) {
-      return res.status(401).json({ error: "Invalid email or password" });
-    }
-
-    const token = jwt.sign(
-      { userId: user.id, role: user.role },
-      process.env.JWT_SECRET,
-      { expiresIn: "1h" }
-    );
-
-    console.log("Generated token:", token);
-
-    res.json({ message: "Login successful", token });
-  } catch (error) {
-    console.error("Database error during login:", error);
-    console.error("Error details:", error); //Log full error object
-    res.status(500).json({ error: "Database error", details: error.message });
-  }
-});
+  });
+  
 
 module.exports = router;
