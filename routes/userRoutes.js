@@ -2,6 +2,7 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const db = require("../config/db");
+const authMiddleware = require("../middleware/authMiddleware");
 
 const router = express.Router();
 
@@ -48,52 +49,69 @@ router.post("/register", async (req, res) => {
 });
 
 router.post("/login", async (req, res) => {
-    const { email, password } = req.body;
-  
-    console.log("Received login request:", req.body);
-  
-    try {
-      console.log("Executing query:", "SELECT * FROM users WHERE email = ?");
-      const [users] = await db.execute("SELECT * FROM users WHERE email = ?", [
-        email,
-      ]);
-  
-      console.log("User query result:", users);
-  
+  const { email, password } = req.body;
+
+  try {
+      const [users] = await db.execute("SELECT * FROM users WHERE email = ?", [email]);
+
       if (!Array.isArray(users) || users.length === 0) {
-        console.log("User not found or query returned an unexpected structure");
-        return res.status(401).json({ error: "Invalid email or password" });
+          return res.status(401).json({ error: "Invalid email or password" });
       }
-  
+
       const user = users[0];
-  
+
+      // console.log("Users", user)
+
       const isMatch = await bcrypt.compare(password, user.password_hash);
-      console.log("Password match status:", isMatch);
-  
       if (!isMatch) {
-        return res.status(401).json({ error: "Invalid email or password" });
+          return res.status(401).json({ error: "Invalid email or password" });
       }
-  
+
+      // ✅ Generate JWT token
       const token = jwt.sign(
-        { userId: user.id, role: user.role }, // Include role in JWT
-        process.env.JWT_SECRET,
-        { expiresIn: "1h" }
+          { userId: user.id, role: user.role }, 
+          process.env.JWT_SECRET, 
+          { expiresIn: "1h" }
       );
-  
-      console.log("Generated token:", token);
-  
-      res.json({ 
-        message: "Login successful", 
-        token,
-        role: user.role, // Return role in response
-        userName: user.name  // Return name in response
+
+      // ✅ Set the token in an HTTP-only cookie
+      res.cookie("authToken", token, {
+          httpOnly: true, // 🔥 Prevents access via JavaScript (XSS protection)
+          secure: process.env.NODE_ENV === "production", // Use secure cookie in production
+          sameSite: "strict",
+          maxAge: 3600000, // 1 hour
       });
-    } catch (error) {
+
+      // ✅ Send user details in response
+      res.json({ message: "Login successful", user: { id: user.id, name: user.name, role: user.role } });
+  } catch (error) {
       console.error("Database error during login:", error);
-      console.error("Error details:", error); // Log full error object
       res.status(500).json({ error: "Database error", details: error.message });
-    }
-  });
+  }
+});
+
+router.get("/me", authMiddleware, async (req, res) => {
+  try {
+      const [users] = await db.execute("SELECT id, name, email, role FROM users WHERE id = ?", [
+          req.user.userId,
+      ]);
+
+      if (!users.length) {
+          return res.status(404).json({ error: "User not found" });
+      }
+
+      res.json({ user: users[0] });
+  } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/logout", (req, res) => {
+  res.clearCookie("authToken"); // 🔥 Remove the token
+  res.json({ message: "Logged out successfully" });
+});
+
   
 
 module.exports = router;
