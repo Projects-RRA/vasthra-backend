@@ -2,6 +2,7 @@ require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 const userRoutes = require("./routes/userRoutes");
+const productRoutes = require("./routes/productRoutes");
 const db = require("./config/db");
 const cookieParser = require("cookie-parser");
 
@@ -10,6 +11,7 @@ app.use(cors({ origin: "http://localhost:3000", credentials: true }));
 app.use(express.json()); // Parse JSON requests
 app.use(cookieParser());
 app.use("/api/users", userRoutes);
+app.use("/api/products", productRoutes);
 
 app.get("/", (req, res) => {
   res.send("Vasthra API is running...");
