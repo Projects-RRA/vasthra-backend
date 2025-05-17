@@ -3,6 +3,7 @@ const express = require("express");
 const cors = require("cors");
 const userRoutes = require("./routes/userRoutes");
 const productRoutes = require("./routes/productRoutes");
+const cartRoutes = require("./routes/cartRoutes");
 const db = require("./config/db");
 const cookieParser = require("cookie-parser");
 
@@ -12,6 +13,7 @@ app.use(express.json()); // Parse JSON requests
 app.use(cookieParser());
 app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
+app.use("/api/cart", cartRoutes);
 
 app.get("/", (req, res) => {
   res.send("Vasthra API is running...");
