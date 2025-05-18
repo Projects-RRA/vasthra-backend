@@ -101,7 +101,7 @@ router.post("/addItem", authMiddleware, async (req, res) => {
 // Update cart item
 router.put("/updateItem", authMiddleware, async (req, res) => {
   const userId = req.user.userId;
-  
+
   const { product_id, quantity } = req.body;
 
   if (!product_id || typeof quantity !== "number" || quantity < 1) {
@@ -128,7 +128,10 @@ router.put("/updateItem", authMiddleware, async (req, res) => {
     }
 
     if (quantity > stock) {
-      return res.status(400).json({ error: `Only ${stock} items in stock` });
+      return res.status(200).json({
+        status: "out_of_stock",
+        message: `Only ${stock} items in stock`,
+      });
     }
 
     // Check if cart item exists
