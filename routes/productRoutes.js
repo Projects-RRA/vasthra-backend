@@ -23,7 +23,7 @@ router.get("/products", async (req, res) => {
         SELECT p.*, c.name AS category_name
         FROM products p
         JOIN categories c ON p.category_id = c.id
-        WHERE p.is_active = 1
+        WHERE p.is_active = 1 AND p.stock > 0
         ORDER BY p.created_at DESC
       `);
     res.status(200).json({ products: rows });
