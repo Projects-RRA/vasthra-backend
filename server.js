@@ -5,6 +5,7 @@ const userRoutes = require("./routes/userRoutes");
 const productRoutes = require("./routes/productRoutes");
 const cartRoutes = require("./routes/cartRoutes");
 const orderRoutes = require("./routes/orderRoutes");
+const sellerRoutes = require("./routes/sellerRoutes");
 const db = require("./config/db");
 const cookieParser = require("cookie-parser");
 
@@ -16,6 +17,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/cart", cartRoutes);
 app.use("/api/order", orderRoutes);
+app.use("/api/seller", sellerRoutes);
 
 app.get("/", (req, res) => {
   res.send("Vasthra API is running...");
